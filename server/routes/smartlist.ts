@@ -3,6 +3,6 @@ import { prisma } from '../lib/prisma';
 
 export const smartListRoutes = new Elysia({ prefix: '/smartlist' })
   .get('/', async () => {
-    const lists = await prisma.smartlist.findMany()
+    const lists = await prisma.smartList.findMany()
     return lists
   })
