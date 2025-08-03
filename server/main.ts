@@ -5,8 +5,24 @@ import { receiptRoutes } from './routes/receipt';
 import { smartListRoutes } from './routes/smartlist';
 
 const app = new Elysia()
-  .onRequest(({ request }) => {
+  .onRequest(({ request, set }) => {
     console.log(`${request.method} ${new URL(request.url).pathname}`);
+
+    // Add CORS headers
+    set.headers = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    };
+  })
+  .options('*', ({ set }) => {
+    // Handle preflight requests
+    set.headers = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    };
+    return new Response(null, { status: 204 });
   })
   .get('/favicon.ico', () => {
     console.log('Favicon requested');
