@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -45,7 +45,7 @@ const MOCK_COUPONS: Record<string, Coupon> = {
 export default function CouponDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  
+
   const coupon = MOCK_COUPONS[id as string];
 
   if (!coupon) {
@@ -75,20 +75,20 @@ export default function CouponDetailScreen() {
         <View style={styles.discountBadge}>
           <Text style={styles.discountText}>{coupon.discount}</Text>
         </View>
-        
+
         <Text style={styles.title}>{coupon.title}</Text>
-        
+
         <View style={styles.detailsContainer}>
           <View style={styles.detailRow}>
             <MaterialIcons name="description" size={20} color="#4CAF50" />
             <Text style={styles.detailText}>{coupon.description}</Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <MaterialIcons name="event" size={20} color="#4CAF50" />
             <Text style={styles.detailText}>Expires: {coupon.expiryDate}</Text>
           </View>
-          
+
           {coupon.code && (
             <View style={styles.detailRow}>
               <MaterialIcons name="confirmation-number" size={20} color="#4CAF50" />
@@ -96,13 +96,13 @@ export default function CouponDetailScreen() {
             </View>
           )}
         </View>
-        
+
         <View style={styles.termsContainer}>
           <Text style={styles.termsTitle}>Terms & Conditions</Text>
           <Text style={styles.termsText}>{coupon.terms}</Text>
         </View>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.addToWalletButton}
           onPress={handleAddToWallet}
         >

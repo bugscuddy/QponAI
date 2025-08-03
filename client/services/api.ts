@@ -25,7 +25,7 @@ export interface Receipt {
   userId: string;
 }
 
-export const API_BASE_URL = 'http://localhost:3000';
+export const API = process.env.API_BASE_URL || '';
 
 export class ApiService {
   private baseUrl: string;
@@ -58,11 +58,11 @@ export class ApiService {
       },
       body: JSON.stringify({ email, password }),
     });
-    
+
     if (!response.ok) {
       return { success: false };
     }
-    
+
     const data = await response.json();
     return { success: true, user: data.user };
   }
@@ -75,13 +75,13 @@ export class ApiService {
       },
       body: JSON.stringify({ imageUrl, userId }),
     });
-    
+
     if (!response.ok) {
       throw new Error('Failed to upload receipt');
     }
-    
+
     return response.json();
   }
 }
 
-export const apiService = new ApiService(API_BASE_URL);
+export const apiService = new ApiService(API);

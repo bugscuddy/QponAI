@@ -1,6 +1,5 @@
 import { Tabs } from 'expo-router';
 import { Entypo, MaterialIcons, FontAwesome } from '@expo/vector-icons';
-import { StyleSheet } from 'react-native';
 
 // Define types for tab bar icon props
 type TabBarIconProps = {
