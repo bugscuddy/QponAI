@@ -3,6 +3,7 @@ export type RootStackParamList = {
   Coupons: undefined;
   Cart: undefined;
   Profile: undefined;
+  ScanCoupon: undefined;
   // Add other screen params as needed
 };
 

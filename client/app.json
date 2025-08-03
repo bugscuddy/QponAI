@@ -1,27 +1,45 @@
 {
   "expo": {
-    "name": "client",
-    "slug": "client",
+    "name": "QponAI",
+    "slug": "qpon-ai",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "client",
+    "scheme": "qponai",
     "userInterfaceStyle": "automatic",
+    "jsEngine": "hermes",
     "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
+    "entryPoint": "./index.tsx",
+    "experiments": {
+      "tsconfigPaths": true,
+      "typedRoutes": true,
+      "typedRoots": true
     },
     "web": {
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/images/favicon.png"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.qponai",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow QponAI to access your camera to scan barcodes.",
+        "NSPhotoLibraryUsageDescription": "Allow QponAI to access your photo library to upload images for barcode scanning."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#4CAF50"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "package": "com.yourcompany.qponai"
     },
     "plugins": [
       "expo-router",
@@ -33,10 +51,13 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "expo-barcode-scanner",
+        {
+          "cameraPermission": "Allow QponAI to access your camera to scan barcodes."
+        }
       ]
-    ],
-    "experiments": {
-      "typedRoutes": true
-    }
+    ]
   }
 }
