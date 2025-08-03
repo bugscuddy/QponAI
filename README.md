@@ -77,7 +77,7 @@ QponAI is built with a clean, intuitive interface that prioritizes:
 
 ## 🤝 Contributing
 
-We welcome contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+&copy; This is a copyright property of WickedUI - All Rights Reserved
 
 ## 📜 Legal Notice
 
