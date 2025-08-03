@@ -3,6 +3,7 @@ import { authRoutes } from './routes/auth';
 import { cartRoutes } from './routes/cart';
 import { receiptRoutes } from './routes/receipt';
 import { smartListRoutes } from './routes/smartlist';
+import { couponRoutes } from './routes/coupons';
 
 const app = new Elysia()
   .onRequest(({ request, set }) => {
@@ -35,6 +36,7 @@ const app = new Elysia()
   .use(cartRoutes)
   .use(smartListRoutes)
   .use(receiptRoutes)
+  .use(couponRoutes)
   .onError(({ code, error }) => {
     console.log('Error:', code, error);
     if (code === 'NOT_FOUND') {
