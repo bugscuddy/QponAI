@@ -71,6 +71,7 @@ export class ApiService {
   }
 
   private async loadTokens() {
+    if (typeof window === 'undefined') return; // Avoid SSR issues
     try {
       const tokens = await AsyncStorage.getItem(AUTH_TOKENS_KEY);
       if (tokens) this.tokens = JSON.parse(tokens);
@@ -80,8 +81,9 @@ export class ApiService {
   }
 
   private async saveTokens(tokens: AuthTokens) {
+    this.tokens = tokens;
+    if (typeof window === 'undefined') return;
     try {
-      this.tokens = tokens;
       await AsyncStorage.setItem(AUTH_TOKENS_KEY, JSON.stringify(tokens));
     } catch (error) {
       console.error('Failed to save auth tokens', error);
@@ -174,7 +176,9 @@ export class ApiService {
 
   async logout() {
     this.tokens = null;
-    await AsyncStorage.removeItem(AUTH_TOKENS_KEY);
+    if (typeof window !== 'undefined') {
+      await AsyncStorage.removeItem(AUTH_TOKENS_KEY);
+    }
   }
 
   async getCurrentUser(): Promise<UserResponse | null> {
