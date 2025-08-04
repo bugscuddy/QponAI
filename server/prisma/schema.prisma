@@ -8,41 +8,131 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  cartItems CartItem[]
-  receipts  Receipt[]
-  smartLists SmartList[]
+  id                    String      @id @default(cuid())
+  email                 String      @unique
+  password              String
+  name                  String?
+  phone                 String?
+  emailVerified         Boolean     @default(false)
+  verificationToken     String?     @map("verification_token")
+  verificationTokenExpiry DateTime? @map("verification_token_expiry")
+  resetToken            String?     @map("reset_token")
+  resetTokenExpiry      DateTime?   @map("reset_token_expiry")
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
+  cart                  Cart?       @relation("UserToCart")
+  receipts              Receipt[]
+  smartLists            SmartList[]
+  notifications         Notification[]
+  userCoupons           UserCoupon[]
+  
+  @@map("users")
+}
+
+model Cart {
+  id        String    @id @default(cuid())
+  user      User?     @relation("UserToCart", fields: [userId], references: [id])
+  userId    String?   @unique @map("user_id")
+  items     CartItem[]
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  
+  @@map("carts")
 }
 
 model CartItem {
-  id       String   @id @default(cuid())
-  name     String
-  quantity Int
-  user     User     @relation(fields: [userId], references: [id])
-  userId   String
+  id        String   @id @default(cuid())
+  productId String   @map("product_id")
+  name      String
+  price     Float
+  quantity  Int      @default(1)
+  image     String?
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId    String   @map("cart_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  @@map("cart_items")
 }
 
 model Coupon {
+  id            String       @id @default(cuid())
+  title         String
+  description   String?
+  code          String      @unique
+  discount      Float
+  discountType  String      @map("discount_type") // 'percentage' or 'fixed'
+  minPurchase   Float?      @map("min_purchase") // Minimum purchase amount required
+  maxDiscount   Float?      @map("max_discount") // Maximum discount amount (for percentage)
+  startDate     DateTime?   @map("start_date")
+  endDate       DateTime    @map("end_date")
+  isActive      Boolean     @default(true) @map("is_active")
+  usageLimit    Int?        @map("usage_limit") // Max number of times coupon can be used
+  usedCount     Int         @default(0) @map("used_count")
+  category      String?     // e.g., 'produce', 'dairy', 'meat'
+  productIds    String[]    @map("product_ids") // Empty means applicable to all products
+  storeId       String      @map("store_id") // 'shoprite' or other store identifiers
+  isAutoApplied Boolean     @default(false) @map("is_auto_applied")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  userCoupons   UserCoupon[]
+  
+  @@map("coupons")
+}
+
+model UserCoupon {
   id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  couponId  String   @map("coupon_id")
+  isUsed    Boolean  @default(false) @map("is_used")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, couponId])
+  @@map("user_coupons")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
   title     String
-  discount  Float
-  expiresAt DateTime
+  message   String
+  type      String   // 'coupon', 'deal', 'cart', etc.
+  isRead    Boolean  @default(false) @map("is_read")
+  data      Json?    // Additional data as JSON
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  @@map("notifications")
 }
 
 model SmartList {
-  id       String   @id @default(cuid())
-  title    String
-  items    String[]
-  user     User     @relation(fields: [userId], references: [id])
-  userId   String
+  id        String   @id @default(cuid())
+  title     String
+  items     Json     // Array of product IDs or names
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  @@map("smart_lists")
 }
 
 model Receipt {
-  id        String   @id @default(cuid())
-  imageUrl  String
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
+  id          String   @id @default(cuid())
+  imageUrl    String   @map("image_url")
+  storeName   String   @map("store_name")
+  totalAmount Float    @map("total_amount")
+  date        DateTime
+  items       Json     // Array of items with details
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String   @map("user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  @@map("receipts")
 }
