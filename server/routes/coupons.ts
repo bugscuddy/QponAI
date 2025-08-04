@@ -1,5 +1,5 @@
-import { Elysia } from 'elysia';
 import { PrismaClient } from '@prisma/client';
+import { Elysia } from 'elysia';
 
 const prisma = new PrismaClient();
 
@@ -98,7 +98,7 @@ const mockCoupons: Coupon[] = [
   },
 ];
 
-export const couponRoutes = new Elysia({ prefix: '/coupons' })
+export const couponRoutes = new Elysia({ prefix: '/api/coupons' })
   // Get all available coupons
   .get('/', () => {
     return {
@@ -106,42 +106,42 @@ export const couponRoutes = new Elysia({ prefix: '/coupons' })
       data: mockCoupons,
     };
   })
-  
+
   // Get coupon by ID
   .get('/:id', ({ params }) => {
     const coupon = mockCoupons.find(c => c.id === params.id);
-    
+
     if (!coupon) {
       return {
         success: false,
         message: 'Coupon not found',
       };
     }
-    
+
     return {
       success: true,
       data: coupon,
     };
   })
-  
+
   // Apply a coupon
   .post('/apply', async ({ body }) => {
     const { couponId, userId } = body as ApplyCouponRequest;
-    
+
     // In a real app, you would:
     // 1. Validate the coupon exists and is valid
     // 2. Check if the user has already used this coupon
     // 3. Apply the coupon to the user's cart/order
-    
+
     const coupon = mockCoupons.find(c => c.id === couponId);
-    
+
     if (!coupon) {
       return {
         success: false,
         message: 'Invalid coupon',
       };
     }
-    
+
     // Check if coupon is expired
     if (new Date(coupon.validUntil) < new Date()) {
       return {
@@ -149,7 +149,7 @@ export const couponRoutes = new Elysia({ prefix: '/coupons' })
         message: 'This coupon has expired',
       };
     }
-    
+
     // In a real app, you would save this to the database
     // await prisma.appliedCoupon.create({
     //   data: {
@@ -158,7 +158,7 @@ export const couponRoutes = new Elysia({ prefix: '/coupons' })
     //     appliedAt: new Date(),
     //   },
     // });
-    
+
     return {
       success: true,
       message: 'Coupon applied successfully',
@@ -170,44 +170,44 @@ export const couponRoutes = new Elysia({ prefix: '/coupons' })
       },
     };
   })
-  
+
   // Find best coupons for cart
   .post('/best-match', async ({ body }) => {
     const { cartItems, userId } = body as FindBestDealsRequest;
-    
+
     // In a real app, you would:
     // 1. Analyze the cart items
     // 2. Find coupons that match the items
     // 3. Return the best matching coupons
-    
+
     // Simple matching logic for demo purposes
     const matchedCoupons = mockCoupons.filter(coupon => {
       // Auto-applied coupons
       if (coupon.isAutoApplied) return true;
-      
+
       // Category-based matching
       const cartCategories = cartItems.map(item => item.name.toLowerCase());
       if (cartCategories.some(cat => coupon.category.toLowerCase().includes(cat))) {
         return true;
       }
-      
+
       // Product ID matching (if we had product IDs)
       if (coupon.productIds.length > 0) {
         return cartItems.some(item => coupon.productIds.includes(item.id));
       }
-      
+
       return false;
     });
-    
+
     // Sort by discount amount (highest first)
     matchedCoupons.sort((a, b) => b.discount - a.discount);
-    
+
     return {
       success: true,
       data: matchedCoupons.slice(0, 5), // Return top 5 matches
     };
   })
-  
+
   // Get user's applied coupons
   .get('/user/:userId/applied', ({ params }) => {
     // In a real app, you would fetch this from the database
@@ -215,7 +215,7 @@ export const couponRoutes = new Elysia({ prefix: '/coupons' })
     //   where: { userId: params.userId },
     //   include: { coupon: true },
     // });
-    
+
     // Return mock data for now
     return {
       success: true,

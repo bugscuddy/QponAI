@@ -1,6 +1,6 @@
-import { Elysia, t } from 'elysia';
 import { jwt as createJwt } from '@elysiajs/jwt';
 import { randomUUID } from 'crypto';
+import { Elysia, t } from 'elysia';
 import { db } from '../lib/db';
 
 // JWT configuration
@@ -21,9 +21,9 @@ class AuthService {
   constructor(
     private jwt: any,
     private refreshJwt: any
-  ) {}
+  ) { }
 
-  async register(email: string, password: string, name?: string, phone?: string) {
+  async register(email: string, password: string, phone?: string) {
     // Check if user already exists
     const existingUser = await db.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -36,7 +36,6 @@ class AuthService {
         id: randomUUID(),
         email,
         password, // In production, make sure to hash the password
-        name,
         phone,
         emailVerified: false,
         cart: {
@@ -52,7 +51,6 @@ class AuthService {
     const userData = {
       id: user.id,
       email: user.email,
-      name: user.name,
       phone: user.phone,
       emailVerified: user.emailVerified,
       createdAt: user.createdAt,
@@ -74,7 +72,7 @@ class AuthService {
         cart: true
       }
     });
-    
+
     if (!user) {
       throw new Error('Invalid email or password');
     }
@@ -88,7 +86,6 @@ class AuthService {
     const userData = {
       id: user.id,
       email: user.email,
-      name: user.name,
       phone: user.phone,
       emailVerified: user.emailVerified,
       createdAt: user.createdAt,
@@ -115,7 +112,7 @@ class AuthService {
     try {
       const payload = await this.refreshJwt.verify(token);
       if (!payload) throw new Error('Invalid refresh token');
-      
+
       return this.generateTokens(payload.userId, payload.email);
     } catch (error) {
       throw new Error('Invalid refresh token');
@@ -135,7 +132,6 @@ class AuthService {
     return {
       id: user.id,
       email: user.email,
-      name: user.name,
       phone: user.phone,
       emailVerified: user.emailVerified,
       createdAt: user.createdAt,
@@ -158,7 +154,6 @@ const authService = new AuthService(jwt, refreshJwt);
 const userResponseSchema = t.Object({
   id: t.String(),
   email: t.String(),
-  name: t.Optional(t.Nullable(t.String())),
   phone: t.Optional(t.Nullable(t.String())),
   emailVerified: t.Boolean(),
   cartId: t.Optional(t.Nullable(t.String())),
@@ -172,36 +167,59 @@ const tokensResponseSchema = t.Object({
 });
 
 // Create and export auth routes
-export const authRoutes = new Elysia({ prefix: '/auth' })
-  .decorate('auth', authService)
+export const authRoutes = new Elysia({ prefix: '/api/auth' })
+  .use(jwt)
+  .use(refreshJwt)
   .onError(({ error }) => handleError(error))
-  
+
   // Register a new user
   .post(
     '/register',
-    async ({ body, auth, set }) => {
+    async ({ body, jwt, refreshJwt, set }) => {
       try {
-        const result = await auth.register(
-          body.email, 
-          body.password, 
-          body.name, 
-          body.phone
-        );
-        
+        // Check if user already exists
+        const existingUser = await db.user.findUnique({ where: { email: body.email } });
+        if (existingUser) {
+          set.status = 400;
+          return { success: false, message: 'Email already in use' };
+        }
+
+        // Create user with a new cart
+        const user = await db.user.create({
+          data: {
+            id: randomUUID(),
+            email: body.email,
+            password: body.password, // In production, make sure to hash the password
+            phone: body.phone,
+            emailVerified: false,
+            cart: {
+              create: {}
+            }
+          },
+          include: {
+            cart: true
+          }
+        });
+
+        // Generate tokens
+        const [accessToken, refreshToken] = await Promise.all([
+          jwt.sign({ userId: user.id, email: user.email }),
+          refreshJwt.sign({ userId: user.id, email: user.email })
+        ]);
+
         return {
           success: true,
           data: {
             user: {
-              id: result.user.id,
-              email: result.user.email,
-              name: result.user.name || null,
-              phone: result.user.phone || null,
-              emailVerified: result.user.emailVerified,
-              cartId: result.user.cartId,
-              createdAt: result.user.createdAt.toISOString(),
-              updatedAt: result.user.updatedAt.toISOString(),
+              id: user.id,
+              email: user.email,
+              phone: user.phone || null,
+              emailVerified: user.emailVerified,
+              cartId: user.cart?.id || null,
+              createdAt: user.createdAt.toISOString(),
+              updatedAt: user.updatedAt.toISOString(),
             },
-            tokens: result.tokens,
+            tokens: { accessToken, refreshToken },
           },
         };
       } catch (error) {
@@ -213,7 +231,6 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       body: t.Object({
         email: t.String(),
         password: t.String(),
-        name: t.Optional(t.String()),
         phone: t.Optional(t.String()),
       }),
       response: {
@@ -231,28 +248,50 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       },
     }
   )
-  
+
   // Login user
   .post(
     '/login',
-    async ({ body, auth, set }) => {
+    async ({ body, jwt, refreshJwt, set }) => {
       try {
-        const result = await auth.login(body.email, body.password);
-        
+        // Find user with cart
+        const user = await db.user.findUnique({
+          where: { email: body.email },
+          include: {
+            cart: true
+          }
+        });
+
+        if (!user) {
+          set.status = 400;
+          return { success: false, message: 'Invalid email or password' };
+        }
+
+        // Verify password (in production, use bcrypt.compare)
+        if (user.password !== body.password) {
+          set.status = 400;
+          return { success: false, message: 'Invalid email or password' };
+        }
+
+        // Generate tokens
+        const [accessToken, refreshToken] = await Promise.all([
+          jwt.sign({ userId: user.id, email: user.email }),
+          refreshJwt.sign({ userId: user.id, email: user.email })
+        ]);
+
         return {
           success: true,
           data: {
             user: {
-              id: result.user.id,
-              email: result.user.email,
-              name: result.user.name || null,
-              phone: result.user.phone || null,
-              emailVerified: result.user.emailVerified,
-              cartId: result.user.cartId,
-              createdAt: result.user.createdAt.toISOString(),
-              updatedAt: result.user.updatedAt.toISOString(),
+              id: user.id,
+              email: user.email,
+              phone: user.phone || null,
+              emailVerified: user.emailVerified,
+              cartId: user.cart?.id || null,
+              createdAt: user.createdAt.toISOString(),
+              updatedAt: user.updatedAt.toISOString(),
             },
-            tokens: result.tokens,
+            tokens: { accessToken, refreshToken },
           },
         };
       } catch (error) {
@@ -280,7 +319,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       },
     }
   )
-  
+
   // Refresh token
   .post(
     '/refresh-token',
@@ -309,7 +348,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       },
     }
   )
-  
+
   // Get current user
   .use(jwt)
   .get(
@@ -321,26 +360,25 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
           set.status = 401;
           return { success: false, message: 'Unauthorized' };
         }
-        
+
         const payload = await jwt.verify(token);
         if (!payload || !payload.userId) {
           set.status = 401;
           return { success: false, message: 'Invalid token' };
         }
-        
+
         const userId = String(payload.userId);
         const user = await authService.getCurrentUser(userId);
         if (!user) {
           set.status = 404;
           return { success: false, message: 'User not found' };
         }
-        
+
         return {
           success: true,
           data: {
             id: user.id,
             email: user.email,
-            name: user.name || null,
             phone: user.phone || null,
             emailVerified: user.emailVerified,
             cartId: user.cartId,
@@ -374,7 +412,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       },
     }
   )
-  
+
   // Verify email
   .post(
     '/verify-email',
@@ -402,7 +440,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       },
     }
   )
-  
+
   // Request password reset
   .post(
     '/forgot-password',
@@ -430,7 +468,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       },
     }
   )
-  
+
   // Reset password
   .post(
     '/reset-password',

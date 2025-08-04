@@ -11,7 +11,6 @@ model User {
   id                    String      @id @default(cuid())
   email                 String      @unique
   password              String
-  name                  String?
   phone                 String?
   emailVerified         Boolean     @default(false)
   verificationToken     String?     @map("verification_token")
@@ -25,7 +24,7 @@ model User {
   smartLists            SmartList[]
   notifications         Notification[]
   userCoupons           UserCoupon[]
-  
+
   @@map("users")
 }
 
@@ -36,7 +35,7 @@ model Cart {
   items     CartItem[]
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
-  
+
   @@map("carts")
 }
 
@@ -51,7 +50,7 @@ model CartItem {
   cartId    String   @map("cart_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  
+
   @@map("cart_items")
 }
 
@@ -76,7 +75,7 @@ model Coupon {
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
   userCoupons   UserCoupon[]
-  
+
   @@map("coupons")
 }
 
@@ -106,7 +105,7 @@ model Notification {
   data      Json?    // Additional data as JSON
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  
+
   @@map("notifications")
 }
 
@@ -118,7 +117,7 @@ model SmartList {
   userId    String   @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  
+
   @@map("smart_lists")
 }
 
@@ -133,6 +132,6 @@ model Receipt {
   userId      String   @map("user_id")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
-  
+
   @@map("receipts")
 }

@@ -1,6 +1,6 @@
-import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
 import { swagger } from '@elysiajs/swagger';
+import { Elysia } from 'elysia';
 
 // Load environment variables
 import 'dotenv/config';
@@ -8,9 +8,9 @@ import 'dotenv/config';
 // Import routes
 import { authRoutes } from './routes/auth';
 import { cartRoutes } from './routes/cart';
+import { couponRoutes } from './routes/coupons';
 import { receiptRoutes } from './routes/receipt';
 import { smartListRoutes } from './routes/smartlist';
-import { couponRoutes } from './routes/coupons';
 
 // Create the Elysia app with basic configuration
 const app = new Elysia()
@@ -31,7 +31,7 @@ const app = new Elysia()
       },
     })
   )
-  
+
   // Enable CORS
   .use(
     cors({
@@ -42,7 +42,7 @@ const app = new Elysia()
       exposeHeaders: ['Authorization'],
     })
   )
-  
+
   // Health check endpoint
   .get('/health', () => ({
     status: 'ok',
@@ -50,28 +50,25 @@ const app = new Elysia()
     environment: process.env.NODE_ENV || 'development',
     version: '1.0.0'
   }))
-  
+
   // Root endpoint
   .get('/', () => ({
     message: 'QponAI API is running!',
     documentation: '/swagger',
   }))
-  
-  // Group all API routes under /api prefix
-  .group('/api', (app) => 
-    app
-      .use(authRoutes)
-      .use(cartRoutes)
-      .use(smartListRoutes)
-      .use(receiptRoutes)
-      .use(couponRoutes)
-  )
-  
+
+  // Add API routes
+  .use(authRoutes)
+  .use(cartRoutes)
+  .use(smartListRoutes)
+  .use(receiptRoutes)
+  .use(couponRoutes)
+
   // Global error handler
   .onError(({ code, error, set }) => {
     const isError = (e: unknown): e is Error => e instanceof Error;
     const errorMessage = isError(error) ? error.message : 'An unknown error occurred';
-    
+
     console.error('API Error:', {
       code,
       message: errorMessage,
@@ -83,12 +80,12 @@ const app = new Elysia()
       set.status = 400;
       return { success: false, message: 'Validation error' };
     }
-    
+
     if (code === 'NOT_FOUND') {
       set.status = 404;
       return { success: false, message: 'Resource not found' };
     }
-    
+
     // Default error response
     set.status = 500;
     return {
