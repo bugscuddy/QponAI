@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { Link } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Link } from 'expo-router';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 export default function HomeScreen() {
   return (
@@ -60,8 +60,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 20,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 3,
+    // For iOS shadow
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   scanButton: {
     flexDirection: 'row',
@@ -99,8 +106,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginHorizontal: 5,
     alignItems: 'center',
-    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
     elevation: 2,
+    // For iOS shadow
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   actionText: {
     marginTop: 8,

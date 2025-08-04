@@ -16,7 +16,6 @@ export interface SmartList {
 
 export interface User {
   id: string;
-  name: string;
   email: string;
   createdAt: string;
 }
@@ -41,7 +40,6 @@ export interface AuthTokens {
 export interface UserResponse {
   id: string;
   email: string;
-  name: string | null;
   phone: string | null;
   emailVerified: boolean;
   cartId: string | null;
@@ -94,7 +92,7 @@ export class ApiService {
     if (!this.tokens?.refreshToken) return false;
 
     try {
-      const response = await fetch(`${this.baseUrl}/auth/refresh-token`, {
+      const response = await fetch(`${this.baseUrl}/api/auth/refresh-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: this.tokens.refreshToken }),
@@ -142,10 +140,10 @@ export class ApiService {
   }
 
   // Auth methods
-  async register(email: string, password: string, name?: string, phone?: string) {
-    const response = await this.authFetch('/auth/register', {
+  async register(email: string, password: string, phone?: string) {
+    const response = await this.authFetch('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, name, phone }),
+      body: JSON.stringify({ email, password, phone }),
     });
 
     if (!response.ok) {
@@ -159,7 +157,7 @@ export class ApiService {
   }
 
   async login(email: string, password: string): Promise<UserResponse> {
-    const response = await this.authFetch('/auth/login', {
+    const response = await this.authFetch('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -182,7 +180,7 @@ export class ApiService {
   }
 
   async getCurrentUser(): Promise<UserResponse | null> {
-    const response = await this.authFetch('/auth/me');
+    const response = await this.authFetch('/api/auth/me');
     if (!response.ok) return null;
     const { data } = await response.json();
     return data;
@@ -190,7 +188,7 @@ export class ApiService {
 
   // Cart methods
   async getCartItems(): Promise<CartItem[]> {
-    const response = await this.authFetch('/cart');
+    const response = await this.authFetch('/api/cart');
     if (!response.ok) {
       throw new Error('Failed to fetch cart items');
     }
@@ -199,7 +197,7 @@ export class ApiService {
 
   // Smart List methods
   async getSmartLists(): Promise<SmartList[]> {
-    const response = await this.authFetch('/smartlist');
+    const response = await this.authFetch('/api/smartlist');
     if (!response.ok) {
       throw new Error('Failed to fetch smart lists');
     }
@@ -208,7 +206,7 @@ export class ApiService {
 
   // Receipt methods
   async uploadReceipt(imageUrl: string): Promise<Receipt> {
-    const response = await this.authFetch('/receipt', {
+    const response = await this.authFetch('/api/receipt', {
       method: 'POST',
       body: JSON.stringify({ imageUrl }),
     });
@@ -222,7 +220,7 @@ export class ApiService {
 
   // Coupon methods
   async getAvailableCoupons(): Promise<Coupon[]> {
-    const response = await this.authFetch('/coupons');
+    const response = await this.authFetch('/api/coupons');
     if (!response.ok) {
       throw new Error('Failed to fetch available coupons');
     }
@@ -231,7 +229,7 @@ export class ApiService {
   }
 
   async applyCoupon(couponId: string): Promise<{ success: boolean; message: string }> {
-    const response = await this.authFetch('/coupons/apply', {
+    const response = await this.authFetch('/api/coupons/apply', {
       method: 'POST',
       body: JSON.stringify({ couponId }),
     });
@@ -244,8 +242,8 @@ export class ApiService {
     return response.json();
   }
 
-  async findBestCoupons(cartItems: Array<{ id: string; name: string }>) {
-    const response = await this.authFetch('/coupons/best-match', {
+  async findBestCoupons(cartItems: { id: string; name: string }[]) {
+    const response = await this.authFetch('/api/coupons/best-match', {
       method: 'POST',
       body: JSON.stringify({ cartItems }),
     });
@@ -259,7 +257,7 @@ export class ApiService {
   }
 
   async getAppliedCoupons(userId: string) {
-    const response = await this.authFetch(`/coupons/user/${userId}/applied`);
+    const response = await this.authFetch(`/api/coupons/user/${userId}/applied`);
     if (!response.ok) {
       throw new Error('Failed to fetch applied coupons');
     }

@@ -1,5 +1,5 @@
+import { Entypo, FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Entypo, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 
 // Define types for tab bar icon props
 type TabBarIconProps = {
@@ -21,10 +21,10 @@ export default function TabLayout() {
           backgroundColor: 'white',
           borderTopWidth: 1,
           borderTopColor: '#f0f0f0',
-          // Use boxShadow for both web and mobile
-          boxShadow: '0px -2px 4px rgba(0, 0, 0, 0.1)',
           // For Android elevation
           elevation: 5,
+          // For web compatibility - replaces iOS shadow props
+          boxShadow: '0 -2px 4px rgba(0, 0, 0, 0.1)',
         },
         tabBarLabelStyle: {
           fontSize: 12,

@@ -1,7 +1,7 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Coupon = {
   id: string;
@@ -64,7 +64,7 @@ export default function CouponsScreen() {
   const renderCoupon = ({ item }: { item: Coupon }) => {
     console.log('Rendering coupon:', item.id);
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.couponCard}
         onPress={() => {
           console.log('Navigating to coupon:', item.id);
@@ -109,7 +109,7 @@ export default function CouponsScreen() {
       <View style={styles.centered}>
         <MaterialIcons name="error-outline" size={50} color="#f44336" />
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.retryButton}
           onPress={() => {
             setIsLoading(true);
@@ -126,12 +126,12 @@ export default function CouponsScreen() {
   }
 
   console.log('Rendering coupons list with', coupons.length, 'items');
-  
+
   return (
     <View style={styles.container} testID="coupons-screen">
       <View style={styles.header}>
         <Text style={styles.title}>My Coupons</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.scanButton}
           onPress={() => {
             console.log('Navigate to scan screen');
@@ -142,7 +142,7 @@ export default function CouponsScreen() {
           <MaterialIcons name="qr-code-scanner" size={24} color="white" />
         </TouchableOpacity>
       </View>
-      
+
       {coupons.length === 0 ? (
         <View style={styles.centered}>
           <MaterialIcons name="redeem" size={60} color="#e0e0e0" />
@@ -235,8 +235,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 15,
     marginBottom: 15,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 3,
+    // For iOS shadow
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   couponHeader: {
     flexDirection: 'row',

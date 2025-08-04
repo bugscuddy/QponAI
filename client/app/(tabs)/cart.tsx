@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type CartItem = {
   id: string;
@@ -111,8 +111,15 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 15,
     alignItems: 'center',
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 3,
+    // For iOS shadow
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   itemImage: {
     width: 50,

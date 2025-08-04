@@ -1,5 +1,6 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAuth } from '../../context/AuthContext';
 
 type MenuItem = {
   id: string;
@@ -9,6 +10,8 @@ type MenuItem = {
 };
 
 export default function ProfileScreen() {
+  const { user, logout } = useAuth();
+
   const menuItems: MenuItem[] = [
     {
       id: '1',
@@ -44,7 +47,7 @@ export default function ProfileScreen() {
       id: '6',
       title: 'Logout',
       icon: 'logout',
-      onPress: () => console.log('Logout pressed'),
+      onPress: logout,
     },
   ];
 
@@ -67,8 +70,8 @@ export default function ProfileScreen() {
             style={styles.avatar}
           />
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>John Doe</Text>
-            <Text style={styles.userEmail}>john.doe@example.com</Text>
+            <Text style={styles.userName}>{user?.email?.split('@')[0] || 'User'}</Text>
+            <Text style={styles.userEmail}>{user?.email || 'No email'}</Text>
           </View>
         </View>
       </View>
@@ -96,8 +99,15 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 3,
+    // For iOS shadow
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     marginBottom: 20,
   },
   profileHeader: {
@@ -128,8 +138,15 @@ const styles = StyleSheet.create({
     margin: 20,
     borderRadius: 15,
     padding: 5,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 3,
+    // For iOS shadow
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   menuItem: {
     flexDirection: 'row',

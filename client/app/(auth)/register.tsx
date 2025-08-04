@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 
 export default function RegisterScreen() {
@@ -9,16 +9,15 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
     if (!email || !password || password !== confirmPassword) return;
     setLoading(true);
     try {
-      await register(email, password, name);
+      await register(email, password);
       router.replace('/(tabs)');
-    } catch (error) {
+    } catch {
       // error handled in context
     } finally {
       setLoading(false);
@@ -28,12 +27,6 @@ export default function RegisterScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Create an Account</Text>
-      <TextInput
-        placeholder="Name"
-        style={styles.input}
-        value={name}
-        onChangeText={setName}
-      />
       <TextInput
         placeholder="Email"
         style={styles.input}
