@@ -136,17 +136,17 @@ QponAI is an AI-assisted coupon app for Shoprite that helps users save money by 
 ## Development Roadmap
 
 ### Phase 1: MVP (Weeks 1-4)
-- [ ] Set up Expo project
-- [ ] Implement authentication flow
-- [ ] Design and build main screens
-- [ ] Integrate with Shoprite API
-- [ ] Implement basic coupon browsing
+- [x] Set up Expo project
+- [x] Implement authentication flow
+- [x] Design and build main screens
+- [x] Integrate with Shoprite API
+- [x] Implement basic coupon browsing
 
 ### Phase 2: Core Features (Weeks 5-8)
 - [ ] Add user profiles and preferences
 - [ ] Implement push notifications
 - [ ] Build shopping list integration
-- [ ] Add barcode scanner
+- [x] Add barcode scanner
 - [ ] Implement search and filters
 
 ### Phase 3: Advanced Features (Weeks 9-12)
