@@ -1,21 +1,37 @@
-import { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, Platform } from 'react-native';
+import { useState, useCallback, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, Platform, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useLocalSearchParams } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { barcodeService } from '../../services/barcodeService';
+import { colors, spacing, radius } from '../../styles/theme';
+
+type RootStackParamList = {
+  'scan/results': { barcodeData: any };
+};
 
 export default function ScanCouponScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const { resetScan } = useLocalSearchParams<{ resetScan?: string }>();
+  
+  // Reset scan state when resetScan param changes
+  useEffect(() => {
+    if (resetScan) {
+      setScanned(false);
+      setIsLoading(false);
+    }
+  }, [resetScan]);
+  const [isLoading, setIsLoading] = useState(false);
   const [cameraType, setCameraType] = useState<'back' | 'front'>('back');
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const isWeb = Platform.select({ web: true, default: false }) as boolean;
 
   // On web, camera access via Expo Go isn't supported; show a helpful message
   if (isWeb) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: 'white', fontSize: 16, textAlign: 'center', paddingHorizontal: 24 }}>
+        <Text style={{ color: 'white', fontSize: 16, textAlign: 'center', padding: 24 }}>
           Barcode scanning is not available on web in this build. Please use a native device.
         </Text>
       </View>
@@ -27,89 +43,103 @@ export default function ScanCouponScreen() {
     // Permission hook is loading
     return <View style={styles.container} />;
   }
+  
   if (!isWeb && permission && !permission.granted) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: 'white', fontSize: 16, textAlign: 'center', paddingHorizontal: 24, marginBottom: 16 }}>
+        <Text style={{ color: 'white', fontSize: 16, textAlign: 'center', padding: 24, marginBottom: 16 }}>
           We need your permission to use the camera
         </Text>
-        <TouchableOpacity onPress={requestPermission} style={{ paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#4CAF50', borderRadius: 8 }}>
+        <TouchableOpacity 
+          onPress={requestPermission} 
+          style={{ 
+            paddingHorizontal: 20, 
+            paddingVertical: 10, 
+            backgroundColor: colors.primary, 
+            borderRadius: 8 
+          }}
+        >
           <Text style={{ color: 'white', fontWeight: '600' }}>Grant Permission</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
+  const handleBarCodeScanned = useCallback(async ({ type, data }: { type: string; data: string }) => {
+    if (scanned || isLoading) return;
+    
+    if (!barcodeService.validateBarcode(data)) {
+      Alert.alert('Invalid Barcode', 'Please scan a valid product barcode.');
+      return;
+    }
+    
     setScanned(true);
-    Alert.alert(
-      'Barcode Scanned',
-      `Type: ${type}\nData: ${data}`,
-      [{ 
-        text: 'OK', 
-        onPress: () => {
-          // Navigate to coupon details or process the barcode
-          // navigation.navigate('coupon-details', { barcode: data });
-        } 
-      }]
-    );
-  };
+    setIsLoading(true);
+    
+    try {
+      const result = await barcodeService.lookupBarcode(data);
+      
+      if (result) {
+        // Navigate to results screen with the barcode data
+        navigation.navigate('scan/results', { barcodeData: result });
+      } else {
+        Alert.alert('No Matches', 'No matching products or coupons found for this barcode.');
+        setScanned(false);
+      }
+    } catch (error) {
+      console.error('Error processing barcode:', error);
+      Alert.alert('Error', 'Failed to process barcode. Please try again.');
+      setScanned(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [scanned, isLoading, navigation]);
 
-  const toggleCameraType = () => {
-    setCameraType(current => (current === 'back' ? 'front' : 'back'));
-  };
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Looking for coupons...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {!isWeb && (
-        <CameraView
-          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-          barcodeScannerSettings={{
-            barcodeTypes: ['upc_a', 'ean13', 'code128'],
-          }}
-          facing={cameraType}
-          style={StyleSheet.absoluteFillObject}
-        />
-      )}
-      
-      {/* Overlay with cutout */}
-      <View style={styles.overlay}>
-        <View style={styles.topBar}>
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={() => navigation.goBack()}
-          >
-            <MaterialIcons name="arrow-back" size={28} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Scan Barcode</Text>
-          <View style={styles.placeholder} />
-        </View>
-
-        <View style={styles.scanFrame}>
-          <View style={[styles.corner, styles.cornerTopLeft]} />
-          <View style={[styles.corner, styles.cornerTopRight]} />
-          <View style={[styles.corner, styles.cornerBottomLeft]} />
-          <View style={[styles.corner, styles.cornerBottomRight]} />
-        </View>
-
-        <View style={styles.bottomBar}>
-          <Text style={styles.instruction}>Align the barcode within the frame to scan</Text>
-          
-          {scanned && (
-            <TouchableOpacity 
-              style={styles.scanAgainButton} 
-              onPress={() => setScanned(false)}
+      <CameraView
+        style={styles.camera}
+        facing={cameraType}
+        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+        barcodeScannerSettings={{
+          barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'],
+        }}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.topOverlay}>
+            <Text style={styles.overlayText}>Position barcode within the frame</Text>
+          </View>
+          <View style={styles.middleOverlay}>
+            <View style={styles.leftOverlay} />
+            <View style={styles.centerOverlay}>
+              <View style={styles.scanFrame}>
+                <View style={[styles.corner, styles.topLeftCorner]} />
+                <View style={[styles.corner, styles.topRightCorner]} />
+                <View style={[styles.corner, styles.bottomLeftCorner]} />
+                <View style={[styles.corner, styles.bottomRightCorner]} />
+              </View>
+            </View>
+            <View style={styles.rightOverlay} />
+          </View>
+          <View style={styles.bottomOverlay}>
+            <TouchableOpacity
+              style={styles.flipButton}
+              onPress={() => setCameraType(current => (current === 'back' ? 'front' : 'back'))}
             >
-              <Text style={styles.scanAgainText}>Tap to Scan Again</Text>
+              <MaterialIcons name="flip-camera-ios" size={28} color="white" />
             </TouchableOpacity>
-          )}
-          
-          <TouchableOpacity style={styles.flipButton} onPress={toggleCameraType}>
-            <MaterialIcons name="flip-camera-ios" size={24} color="white" />
-            <Text style={styles.buttonText}>Flip Camera</Text>
-          </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </CameraView>
     </View>
   );
 }
@@ -119,108 +149,104 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'black',
   },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'black',
+  },
+  loadingText: {
+    marginTop: spacing.md,
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  camera: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
-    justifyContent: 'space-between',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  topOverlay: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+  },
+  overlayText: {
+    color: 'white',
+    fontSize: 16,
+    textAlign: 'center',
+    padding: spacing.md,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: radius.md,
+  },
+  middleOverlay: {
+    flex: 2,
+    flexDirection: 'row',
+  },
+  leftOverlay: {
+    flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  backButton: {
-    padding: 5,
+  centerOverlay: {
+    flex: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  title: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: '600',
+  rightOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  placeholder: {
-    width: 30,
+  bottomOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scanFrame: {
     width: 250,
     height: 250,
-    alignSelf: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'white',
     position: 'relative',
   },
   corner: {
     position: 'absolute',
     width: 40,
     height: 40,
-    borderColor: '#4CAF50',
+    borderColor: colors.primary,
+    borderWidth: 4,
   },
-  cornerTopLeft: {
+  topLeftCorner: {
     top: -2,
     left: -2,
-    borderTopWidth: 4,
-    borderLeftWidth: 4,
-    borderTopLeftRadius: 10,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 8,
   },
-  cornerTopRight: {
+  topRightCorner: {
     top: -2,
     right: -2,
-    borderTopWidth: 4,
-    borderRightWidth: 4,
-    borderTopRightRadius: 10,
+    borderLeftWidth: 0,
+    borderBottomWidth: 0,
+    borderTopRightRadius: 8,
   },
-  cornerBottomLeft: {
+  bottomLeftCorner: {
     bottom: -2,
     left: -2,
-    borderBottomWidth: 4,
-    borderLeftWidth: 4,
-    borderBottomLeftRadius: 10,
+    borderRightWidth: 0,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 8,
   },
-  cornerBottomRight: {
+  bottomRightCorner: {
     bottom: -2,
     right: -2,
-    borderBottomWidth: 4,
-    borderRightWidth: 4,
-    borderBottomRightRadius: 10,
-  },
-  bottomBar: {
-    padding: 20,
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  instruction: {
-    color: 'white',
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  scanAgainButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 25,
-    paddingVertical: 12,
-    borderRadius: 25,
-    marginBottom: 20,
-  },
-  scanAgainText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    borderBottomRightRadius: 8,
   },
   flipButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 25,
-  },
-  buttonText: {
-    color: 'white',
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: '500',
+    padding: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 50,
   },
 });
