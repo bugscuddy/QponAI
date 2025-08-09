@@ -1,13 +1,18 @@
 import { useSignUp } from '@clerk/clerk-expo';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, Link } from 'expo-router';
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, KeyboardAvoidingView, Platform, ScrollView, ViewStyle, TextStyle } from 'react-native';
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { colors, spacing, radius, shadow, typography } from '../../styles/theme';
 
 export default function SignUpScreen() {
   const { isLoaded, signUp } = useSignUp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
 
   const onSignUpPress = async () => {
@@ -31,63 +36,320 @@ export default function SignUpScreen() {
     }
   };
 
-  return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Create Account' }} />
-      
-      <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        style={styles.input}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        style={styles.input}
-        secureTextEntry
-      />
+  const handleSignUp = () => {
+    if (password !== confirmPassword) {
+      alert("Passwords don't match!");
+      return;
+    }
+    onSignUpPress();
+  };
 
-      <TouchableOpacity 
-        onPress={onSignUpPress} 
-        style={styles.button}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? 'Creating Account...' : 'Create Account'}
-        </Text>
-      </TouchableOpacity>
-    </View>
+  return (
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.container}>
+          <Stack.Screen options={{ 
+            title: 'Create Account',
+            headerTitleStyle: styles.headerTitle,
+            headerShadowVisible: false
+          }} />
+
+          <View style={styles.headerBrand}>
+            <View style={styles.brandPill}>
+              <MaterialIcons name="redeem" size={18} color={colors.primary} />
+              <Text style={styles.brandPillText}>QponAI</Text>
+            </View>
+            <Text style={styles.title}>Create your account</Text>
+            <Text style={styles.subtitle}>Join QponAI and start saving today</Text>
+          </View>
+
+          <View style={styles.card}>
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="email" size={20} color={colors.muted} style={styles.inputIcon} />
+              <TextInput
+                placeholder="Email address"
+                placeholderTextColor={colors.muted}
+                value={email}
+                onChangeText={setEmail}
+                style={styles.input}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="lock" size={20} color={colors.muted} style={styles.inputIcon} />
+              <TextInput
+                placeholder="Password"
+                placeholderTextColor={colors.muted}
+                value={password}
+                onChangeText={setPassword}
+                style={[styles.input, { flex: 1 }]}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity 
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                <MaterialIcons 
+                  name={showPassword ? 'visibility-off' : 'visibility'} 
+                  size={20} 
+                  color={colors.muted}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="lock-outline" size={20} color={colors.muted} style={styles.inputIcon} />
+              <TextInput
+                placeholder="Confirm Password"
+                placeholderTextColor={colors.muted}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                style={[styles.input, { flex: 1 }]}
+                secureTextEntry={!showConfirmPassword}
+              />
+              <TouchableOpacity 
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.eyeIcon}
+              >
+                <MaterialIcons 
+                  name={showConfirmPassword ? 'visibility-off' : 'visibility'} 
+                  size={20} 
+                  color={colors.muted}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity 
+              onPress={handleSignUp} 
+              style={[styles.button, loading && styles.buttonDisabled]}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? 'Creating account...' : 'Create Account'}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.dividerContainer}>
+              <View style={styles.divider} />
+              <Text style={styles.dividerText}>or sign up with</Text>
+              <View style={styles.divider} />
+            </View>
+
+            <TouchableOpacity 
+              style={styles.googleButton}
+              disabled={!isLoaded}
+            >
+              <MaterialCommunityIcons name="google" size={20} color="#DB4437" style={styles.googleIcon} />
+              <Text style={styles.googleButtonText}>Sign up with Google</Text>
+            </TouchableOpacity>
+
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>Already have an account? </Text>
+              <Link href="/login" asChild>
+                <TouchableOpacity>
+                  <Text style={styles.loginLink}>Sign in</Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
+
+            <Text style={styles.termsText}>
+              By signing up, you agree to our Terms of Service and Privacy Policy
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
+type Styles = {
+  scrollContainer: ViewStyle;
+  container: ViewStyle;
+  headerTitle: TextStyle;
+  headerBrand: ViewStyle;
+  brandPill: ViewStyle;
+  brandPillText: TextStyle;
+  title: TextStyle;
+  subtitle: TextStyle;
+  card: ViewStyle;
+  formContainer?: ViewStyle; // legacy reference not used
+  inputContainer: ViewStyle;
+  inputIcon: TextStyle;
+  input: TextStyle;
+  eyeIcon: ViewStyle;
+  button: ViewStyle;
+  buttonDisabled: ViewStyle;
+  buttonText: TextStyle;
+  dividerContainer: ViewStyle;
+  divider: ViewStyle;
+  dividerText: TextStyle;
+  googleButton: ViewStyle;
+  googleIcon: TextStyle;
+  googleButtonText: TextStyle;
+  loginContainer: ViewStyle;
+  loginText: TextStyle;
+  loginLink: TextStyle;
+  termsText: TextStyle;
+};
+
+const styles = StyleSheet.create<Styles>({
+  scrollContainer: {
+    flexGrow: 1,
+    backgroundColor: colors.bg,
+  },
   container: {
     flex: 1,
-    padding: 20,
-    justifyContent: 'center',
+    padding: spacing.xl,
+    backgroundColor: colors.bg,
+  },
+  headerTitle: {
+    ...typography.body,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  headerBrand: {
+    alignItems: 'center',
+    marginTop: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  brandPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.subtle,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    marginBottom: spacing.md,
+  },
+  brandPillText: {
+    marginLeft: spacing.xs,
+    color: colors.primary,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  title: {
+    ...typography.title,
+    color: colors.text,
+    marginBottom: spacing.xs,
+    textAlign: 'center',
+  },
+  subtitle: {
+    ...typography.subtitle,
+    color: colors.muted,
+    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  card: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadow.card,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.subtle,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    height: 54,
+  },
+  inputIcon: {
+    marginRight: spacing.sm,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
+    flex: 1,
+    height: '100%',
     fontSize: 16,
+    color: colors.text,
+  },
+  eyeIcon: {
+    padding: spacing.xs,
   },
   button: {
-    backgroundColor: '#000',
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: colors.primary,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  buttonDisabled: {
+    backgroundColor: '#A0C4FF',
+    shadowOpacity: 0,
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: spacing.lg,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    marginHorizontal: spacing.sm,
+    color: colors.muted,
+    fontSize: 14,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.cardBg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    marginBottom: spacing.lg,
+  },
+  googleIcon: {
+    marginRight: spacing.sm,
+  },
+  googleButtonText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  loginContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  loginText: {
+    color: colors.muted,
+    fontSize: 14,
+  },
+  loginLink: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  termsText: {
+    color: colors.muted,
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: spacing.xl,
   },
 });

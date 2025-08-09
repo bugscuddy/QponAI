@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { BarCodeScanner } from 'expo-barcode-scanner';
 import { StyleSheet, View, Text, TouchableOpacity, Alert, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
@@ -8,11 +7,26 @@ export default function ScanCouponScreen() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
   const [cameraType, setCameraType] = useState<'back' | 'front'>('back');
+  const [Scanner, setScanner] = useState<any>(null);
   const navigation = useNavigation();
 
+  // On web, camera access via Expo Go isn't supported; show a helpful message
+  if (Platform.OS === 'web') {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: 'white', fontSize: 16, textAlign: 'center', paddingHorizontal: 24 }}>
+          Barcode scanning is not available on web in this build. Please use a native device.
+        </Text>
+      </View>
+    );
+  }
+
   useEffect(() => {
+    if (Platform.OS === 'web') return;
     (async () => {
-      const { status } = await BarCodeScanner.requestPermissionsAsync();
+      const mod = await import('expo-barcode-scanner');
+      setScanner(() => mod.BarCodeScanner);
+      const { status } = await mod.BarCodeScanner.requestPermissionsAsync();
       setHasPermission(status === 'granted');
     })();
   }, []);
@@ -53,12 +67,13 @@ export default function ScanCouponScreen() {
 
   return (
     <View style={styles.container}>
-      <BarCodeScanner
+      {Scanner && (
+      <Scanner
         onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
         barCodeTypes={['upc_a', 'ean13', 'code128']}
         type={cameraType}
         style={StyleSheet.absoluteFillObject}
-      />
+      />)}
       
       {/* Overlay with cutout */}
       <View style={styles.overlay}>
