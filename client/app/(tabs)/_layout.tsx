@@ -1,34 +1,35 @@
-import { Entypo, FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-
-// Define types for tab bar icon props
-type TabBarIconProps = {
-  color: string;
-  size: number;
-};
+import { useAuth } from '@clerk/clerk-expo';
+import { TouchableOpacity, Text, View, Platform } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { colors, spacing, radius, shadow } from '../../styles/theme';
 
 export default function TabLayout() {
+  const { signOut } = useAuth();
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#4CAF50',
-        tabBarInactiveTintColor: 'gray',
         headerShown: false,
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.muted,
+        tabBarLabelStyle: { fontSize: 12, fontWeight: 'bold' },
+        tabBarItemStyle: { gap: 2 },
         tabBarStyle: {
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
-          backgroundColor: 'white',
-          borderTopWidth: 1,
-          borderTopColor: '#f0f0f0',
-          // For Android elevation
-          elevation: 5,
-          // For web compatibility - replaces iOS shadow props
-          boxShadow: '0 -2px 4px rgba(0, 0, 0, 0.1)',
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          marginBottom: 4,
+          position: 'absolute',
+          left: spacing.lg,
+          right: spacing.lg,
+          bottom: Platform.select({ ios: spacing.xl, android: spacing.lg, default: spacing.lg }) as number,
+          height: 65,
+          borderRadius: radius.full,
+          backgroundColor: colors.cardBg,
+          borderColor: colors.border,
+          borderWidth: 1,
+          paddingHorizontal: spacing.md,
+          overflow: 'visible',
+          zIndex: 1,
+          ...shadow.card,
         },
       }}
     >
@@ -36,45 +37,213 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }: TabBarIconProps) => (
-            <Entypo name="home" size={size} color={color} />
+          tabBarIcon: ({ color, focused }: { color: string; focused: boolean }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={24} color={color} />
           ),
+          tabBarButton: (props: any) => {
+            const focused = props?.accessibilityState?.selected;
+            return (
+              <TouchableOpacity
+                {...props}
+                accessibilityRole="button"
+                accessibilityLabel="Home"
+                style={[
+                  props.style,
+                  {
+                    flex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  },
+                ]}
+              >
+                <View
+                  style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderRadius: 20,
+                    backgroundColor: focused ? colors.subtle : 'transparent',
+                  }}
+                >
+                  {props.children}
+                </View>
+              </TouchableOpacity>
+            );
+          },
         }}
       />
+
       <Tabs.Screen
         name="coupons"
         options={{
           title: 'Coupons',
-          tabBarIcon: ({ color, size }: TabBarIconProps) => (
-            <MaterialIcons name="local-offer" size={size} color={color} />
+          tabBarIcon: ({ color, focused }: { color: string; focused: boolean }) => (
+            <Ionicons name={focused ? 'ticket' : 'ticket-outline'} size={24} color={color} />
           ),
+          tabBarButton: (props: any) => {
+            const focused = props?.accessibilityState?.selected;
+            return (
+              <TouchableOpacity
+                {...props}
+                accessibilityRole="button"
+                accessibilityLabel="Deals"
+                style={[
+                  props.style,
+                  {
+                    flex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  },
+                ]}
+              >
+                <View
+                  style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderRadius: 20,
+                    backgroundColor: focused ? colors.subtle : 'transparent',
+                  }}
+                >
+                  {props.children}
+                </View>
+              </TouchableOpacity>
+            );
+          },
         }}
       />
+
       <Tabs.Screen
         name="scan"
         options={{
           title: 'Scan',
-          tabBarIcon: ({ color, size }: TabBarIconProps) => (
-            <MaterialIcons name="add-circle" size={size} color={color} />
+          tabBarLabel: '',
+          tabBarIcon: () => (
+            <MaterialCommunityIcons name="barcode-scan" size={32} color="white" />
+          ),
+          tabBarButton: (props: any) => (
+            <TouchableOpacity
+              {...props}
+              accessibilityRole="button"
+              accessibilityLabel="Scan Barcode"
+              style={[
+                props.style,
+                {
+                  position: 'absolute',
+                  top: -24,
+                  left: 0,
+                  right: 0,
+                  width: 64,
+                  height: 64,
+                  borderRadius: 32,
+                  backgroundColor: colors.primary,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 2,
+                  marginLeft: 'auto',
+                  marginRight: 'auto',
+                  ...shadow.card,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons name="barcode-scan" size={32} color="white" />
+            </TouchableOpacity>
           ),
         }}
       />
+
       <Tabs.Screen
         name="cart"
         options={{
           title: 'Cart',
-          tabBarIcon: ({ color, size }: TabBarIconProps) => (
-            <FontAwesome name="shopping-cart" size={size} color={color} />
+          tabBarIcon: ({ color, focused }: { color: string; focused: boolean }) => (
+            <Ionicons name={focused ? 'cart' : 'cart-outline'} size={26} color={color} />
           ),
+          tabBarButton: (props: any) => {
+            const focused = props?.accessibilityState?.selected;
+            return (
+              <TouchableOpacity
+                {...props}
+                accessibilityRole="button"
+                accessibilityLabel="Cart"
+                style={[
+                  props.style,
+                  {
+                    flex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  },
+                ]}
+              >
+                <View
+                  style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderRadius: 20,
+                    backgroundColor: focused ? colors.subtle : 'transparent',
+                  }}
+                >
+                  {props.children}
+                </View>
+              </TouchableOpacity>
+            );
+          },
         }}
       />
+
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }: TabBarIconProps) => (
-            <MaterialIcons name="person" size={size} color={color} />
+          headerShown: true,
+          headerTitle: 'Profile',
+          headerShadowVisible: false,
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={() => signOut()}
+              style={{ marginRight: spacing.lg }}
+            >
+              <Text style={{ color: colors.primary, fontWeight: '700' }}>Sign Out</Text>
+            </TouchableOpacity>
           ),
+          tabBarIcon: ({ color, focused }: { color: string; focused: boolean }) => (
+            <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} size={26} color={color} />
+          ),
+          tabBarButton: (props: any) => {
+            const focused = props?.accessibilityState?.selected;
+            return (
+              <TouchableOpacity
+                {...props}
+                accessibilityRole="button"
+                accessibilityLabel="Profile"
+                style={[
+                  props.style,
+                  {
+                    flex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  },
+                ]}
+              >
+                <View
+                  style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderRadius: 20,
+                    backgroundColor: focused ? colors.subtle : 'transparent',
+                  }}
+                >
+                  {props.children}
+                </View>
+              </TouchableOpacity>
+            );
+          },
         }}
       />
     </Tabs>

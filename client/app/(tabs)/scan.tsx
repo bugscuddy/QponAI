@@ -1,21 +1,44 @@
-import { useState, useEffect } from 'react';
-import { BarCodeScanner } from 'expo-barcode-scanner';
+import { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Alert, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
 export default function ScanCouponScreen() {
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [cameraType, setCameraType] = useState<'back' | 'front'>('back');
   const navigation = useNavigation();
+  const isWeb = Platform.select({ web: true, default: false }) as boolean;
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await BarCodeScanner.requestPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
-  }, []);
+  // On web, camera access via Expo Go isn't supported; show a helpful message
+  if (isWeb) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: 'white', fontSize: 16, textAlign: 'center', paddingHorizontal: 24 }}>
+          Barcode scanning is not available on web in this build. Please use a native device.
+        </Text>
+      </View>
+    );
+  }
+
+  // Ask for permission when needed
+  if (!isWeb && !permission) {
+    // Permission hook is loading
+    return <View style={styles.container} />;
+  }
+  if (!isWeb && permission && !permission.granted) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: 'white', fontSize: 16, textAlign: 'center', paddingHorizontal: 24, marginBottom: 16 }}>
+          We need your permission to use the camera
+        </Text>
+        <TouchableOpacity onPress={requestPermission} style={{ paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#4CAF50', borderRadius: 8 }}>
+          <Text style={{ color: 'white', fontWeight: '600' }}>Grant Permission</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
     setScanned(true);
@@ -36,29 +59,18 @@ export default function ScanCouponScreen() {
     setCameraType(current => (current === 'back' ? 'front' : 'back'));
   };
 
-  if (hasPermission === null) {
-    return (
-      <View style={styles.container}>
-        <Text>Requesting camera permission</Text>
-      </View>
-    );
-  }
-  if (hasPermission === false) {
-    return (
-      <View style={styles.container}>
-        <Text>No access to camera</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <BarCodeScanner
-        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-        barCodeTypes={['upc_a', 'ean13', 'code128']}
-        type={cameraType}
-        style={StyleSheet.absoluteFillObject}
-      />
+      {!isWeb && (
+        <CameraView
+          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+          barcodeScannerSettings={{
+            barcodeTypes: ['upc_a', 'ean13', 'code128'],
+          }}
+          facing={cameraType}
+          style={StyleSheet.absoluteFillObject}
+        />
+      )}
       
       {/* Overlay with cutout */}
       <View style={styles.overlay}>
