@@ -7,7 +7,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "tunnel": "expo start --no-dev --minify --tunnel",
+    "tunnel": "expo start --no-dev --minify --tunnel -c",
     "lint": "expo lint"
   },
   "dependencies": {
