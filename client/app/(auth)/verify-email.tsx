@@ -1,29 +1,25 @@
 import { useSignUp } from '@clerk/clerk-expo';
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 
-export default function SignUpScreen() {
-  const { isLoaded, signUp } = useSignUp();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export default function VerifyEmailScreen() {
+  const { isLoaded, signUp, setActive } = useSignUp();
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const onSignUpPress = async () => {
+  const onVerify = async () => {
     if (!isLoaded) return;
     
     setLoading(true);
     try {
-      await signUp.create({
-        emailAddress: email,
-        password,
+      const completeSignUp = await signUp.attemptEmailAddressVerification({
+        code,
       });
 
-      // Send verification email
-      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
-      router.push('/(auth)/verify-email' as any); // Using 'as any' as a temporary workaround
-      // Alternatively, you can use the exact path: router.push('/verify-email');
+      await setActive({ session: completeSignUp.createdSessionId });
+      router.replace('/(tabs)');
     } catch (err: any) {
       alert(err.errors[0].message);
     } finally {
@@ -33,32 +29,25 @@ export default function SignUpScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Create Account' }} />
+      <Text style={styles.title}>Verify Email</Text>
+      <Text style={styles.subtitle}>Check your email for the verification code</Text>
       
       <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
+        placeholder="Verification Code"
+        value={code}
+        onChangeText={setCode}
         style={styles.input}
         autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        style={styles.input}
-        secureTextEntry
+        keyboardType="number-pad"
       />
 
       <TouchableOpacity 
-        onPress={onSignUpPress} 
+        onPress={onVerify} 
         style={styles.button}
         disabled={loading}
       >
         <Text style={styles.buttonText}>
-          {loading ? 'Creating Account...' : 'Create Account'}
+          {loading ? 'Verifying...' : 'Verify Email'}
         </Text>
       </TouchableOpacity>
     </View>
@@ -71,12 +60,24 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: 'center',
   },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
     padding: 15,
     borderRadius: 8,
-    marginBottom: 15,
+    marginBottom: 20,
     fontSize: 16,
   },
   button: {
