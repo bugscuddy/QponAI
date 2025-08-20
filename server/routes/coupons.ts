@@ -1,7 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import { CheerioAPI, load } from 'cheerio';
+import crypto from 'crypto';
 import { Elysia } from 'elysia';
-
-const prisma = new PrismaClient();
+import { chromium } from 'playwright';
+import { prisma } from '../lib/prisma';
 
 // Types
 type Coupon = {
@@ -225,3 +226,215 @@ export const couponRoutes = new Elysia({ prefix: '/api/coupons' })
       ],
     };
   });
+
+// External scrapes
+couponRoutes.get('/external/shoprite', async () => {
+  const url = 'https://www.shoprite.com/sm/planning/rsid/604/digital-coupon?srsltid=AfmBOopnt47IvhPBIakCm8TL6XeQkCo6K3Ywrr8S4Cp3Z9LPI1xoiQyS';
+
+  // Check cache: coupons from this store created in the last hour
+  const oneHourAgo = new Date(Date.now() - 1000 * 60 * 60);
+  const cached = await prisma.coupon.findMany({
+    where: { storeId: 'shoprite', createdAt: { gte: oneHourAgo } },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+  });
+
+  if (cached.length > 0) {
+    return { success: true, data: cached };
+  }
+
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': 'QponAI/1.0 (+https://github.com)' } });
+    if (!res.ok) {
+      return { success: false, message: `Failed to fetch: ${res.status}` };
+    }
+
+    const html = await res.text();
+    const $: CheerioAPI = load(html);
+
+    // Attempt to parse coupon-like elements
+    const coupons: Array<Partial<Coupon>> = [];
+
+    $('.coupon-card, .digital-coupon, .couponItem, .coupon').each((i, el) => {
+      const title = $(el).find('.coupon-title, .title, h3').first().text().trim();
+      const description = $(el).find('.coupon-desc, .description, p').first().text().trim();
+      const code = $(el).find('.coupon-code, .code').first().text().trim() || undefined;
+      const discountText = $(el).find('.discount, .amount').first().text().trim();
+
+      let discount = 0;
+      let discountType: any = 'fixed';
+      if (discountText.includes('%')) {
+        discountType = 'percentage';
+        const n = parseFloat(discountText.replace('%', '').replace(/[^0-9.\-]/g, ''));
+        if (!isNaN(n)) discount = n;
+      } else {
+        const n = parseFloat(discountText.replace(/[^0-9.\-\.]/g, ''));
+        if (!isNaN(n)) discount = n;
+      }
+
+      coupons.push({
+        title: title || description || `Coupon ${i}`,
+        description: description || '',
+        discount,
+        discountType,
+        validUntil: '',
+        category: '',
+        productIds: [],
+        storeId: 'shoprite',
+        code,
+        isAutoApplied: false,
+      });
+    });
+
+    // If nothing found with selectors, try to detect JS challenge or render issues
+    if (coupons.length === 0) {
+      // The saved HTML shows a Cloudflare JS challenge page. We can't render JS here.
+      // Return empty but informative message.
+      return { success: true, data: [], message: 'No coupons found (page may require JS or be blocked by Cloudflare)' };
+    }
+
+    // Upsert parsed coupons into DB to cache them
+    const upserted = [] as any[];
+    for (const c of coupons) {
+      const codeKey = c.code || c.title || crypto.randomUUID();
+      const slug = String(codeKey).slice(0, 191);
+
+      const up = await prisma.coupon.upsert({
+        where: { code: slug },
+        create: {
+          title: c.title || 'Untitled',
+          description: c.description || '',
+          code: slug,
+          discount: c.discount || 0,
+          discountType: c.discountType || 'fixed',
+          endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30), // default 30 days
+          category: c.category || null,
+          productIds: c.productIds || [],
+          storeId: 'shoprite',
+          isAutoApplied: c.isAutoApplied || false,
+        },
+        update: {
+          title: c.title || 'Untitled',
+          description: c.description || '',
+          discount: c.discount || 0,
+          discountType: c.discountType || 'fixed',
+          updatedAt: new Date(),
+          isActive: true,
+        },
+      });
+
+      upserted.push(up);
+    }
+
+    return { success: true, data: upserted };
+  } catch (err: any) {
+    return { success: false, message: String(err) };
+  }
+});
+
+// Rendered scraping using Playwright to bypass JS challenges
+couponRoutes.get('/external/shoprite/render', async () => {
+  const url = 'https://www.shoprite.com/sm/planning/rsid/604/digital-coupon?srsltid=AfmBOopnt47IvhPBIakCm8TL6XeQkCo6K3Ywrr8S4Cp3Z9LPI1xoiQyS';
+
+  // Check cache first (1 hour)
+  const oneHourAgo = new Date(Date.now() - 1000 * 60 * 60);
+  const cached = await prisma.coupon.findMany({
+    where: { storeId: 'shoprite', createdAt: { gte: oneHourAgo } },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+  });
+
+  if (cached.length > 0) return { success: true, data: cached, cached: true };
+
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+
+  try {
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+
+    // Wait briefly for potential content. Adjust selector if we know a coupon container.
+    try {
+      await page.waitForSelector('.coupon-card, .digital-coupon, .couponItem, .coupon', { timeout: 8000 });
+    } catch (e) {
+      // continue; maybe content uses different selectors
+    }
+
+    const html = await page.content();
+    const $ = load(html);
+
+    const found: Array<Partial<Coupon>> = [];
+    $('.coupon-card, .digital-coupon, .couponItem, .coupon').each((i, el) => {
+      const title = $(el).find('.coupon-title, .title, h3').first().text().trim();
+      const description = $(el).find('.coupon-desc, .description, p').first().text().trim();
+      const code = $(el).find('.coupon-code, .code').first().text().trim() || undefined;
+      const discountText = $(el).find('.discount, .amount').first().text().trim();
+
+      let discount = 0;
+      let discountType: any = 'fixed';
+      if (discountText.includes('%')) {
+        discountType = 'percentage';
+        const n = parseFloat(discountText.replace('%', '').replace(/[^0-9.\-]/g, ''));
+        if (!isNaN(n)) discount = n;
+      } else {
+        const n = parseFloat(discountText.replace(/[^0-9.\-\.]/g, ''));
+        if (!isNaN(n)) discount = n;
+      }
+
+      found.push({
+        title: title || description || `Coupon ${i}`,
+        description: description || '',
+        discount,
+        discountType,
+        validUntil: '',
+        category: '',
+        productIds: [],
+        storeId: 'shoprite',
+        code,
+        isAutoApplied: false,
+      });
+    });
+
+    if (found.length === 0) {
+      await browser.close();
+      return { success: true, data: [], message: 'No coupons found after rendering' };
+    }
+
+    const upserted: any[] = [];
+    for (const c of found) {
+      const codeKey = c.code || c.title || crypto.randomUUID();
+      const slug = String(codeKey).slice(0, 191);
+
+      const up = await prisma.coupon.upsert({
+        where: { code: slug },
+        create: {
+          title: c.title || 'Untitled',
+          description: c.description || '',
+          code: slug,
+          discount: c.discount || 0,
+          discountType: c.discountType || 'fixed',
+          endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+          category: c.category || null,
+          productIds: c.productIds || [],
+          storeId: 'shoprite',
+          isAutoApplied: c.isAutoApplied || false,
+        },
+        update: {
+          title: c.title || 'Untitled',
+          description: c.description || '',
+          discount: c.discount || 0,
+          discountType: c.discountType || 'fixed',
+          updatedAt: new Date(),
+          isActive: true,
+        },
+      });
+
+      upserted.push(up);
+    }
+
+    await browser.close();
+    return { success: true, data: upserted, rendered: true };
+  } catch (err: any) {
+    await browser.close();
+    return { success: false, message: String(err) };
+  }
+});

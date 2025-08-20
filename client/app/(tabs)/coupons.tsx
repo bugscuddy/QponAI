@@ -42,14 +42,27 @@ export default function CouponsScreen() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
 
   useEffect(() => {
-    // Simulate API call
     const fetchCoupons = async () => {
       try {
-        console.log('Fetching coupons...');
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setCoupons(mockCoupons);
-      } catch (err) {
+        setIsLoading(true);
+        const res = await fetch('http://localhost:3000/api/coupons/external/shoprite');
+        const json = await res.json();
+        if (!json.success) {
+          throw new Error(json.message || 'Failed to load coupons');
+        }
+
+        const data = (json.data || []) as any[];
+        // Map server coupon model to client Coupon type
+        const mapped: Coupon[] = data.map((c, i) => ({
+          id: c.id || c.code || `srv-${i}`,
+          title: c.title || c.description || 'Untitled',
+          description: c.description || '',
+          expiryDate: c.endDate || new Date().toISOString(),
+          discount: c.discount ? (c.discountType === 'percentage' ? `${c.discount}%` : `$${c.discount}`) : '',
+        }));
+
+        setCoupons(mapped.length ? mapped : mockCoupons);
+      } catch (err: any) {
         console.error('Failed to fetch coupons:', err);
         setError('Failed to load coupons. Please try again.');
         Alert.alert('Error', 'Failed to load coupons. Please try again.');
