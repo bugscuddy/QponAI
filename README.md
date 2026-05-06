@@ -14,7 +14,7 @@
 
 ### 🤖 Your AI-powered shopping companion that helps you save money effortlessly at Shoprite! 💰
 
-> ⚠️ **Important Notice**: This software and its contents are the proprietary property of WickedUI. Unauthorized copying, distribution, modification, public display, or other unauthorized use is strictly prohibited.
+> ⚠️ **Important Notice**: This software and its contents are the proprietary property of BugsCuddy. Unauthorized copying, distribution, modification, public display, or other unauthorized use is strictly prohibited.
 
 </div>
 
@@ -462,9 +462,9 @@ Accessibility compliant
 
 ### Copyright © 2025 WickedUI. All Rights Reserved
 
-<img src="https://img.shields.io/badge/©%202025%20WickedUI-All%20Rights%20Reserved-red?style=for-the-badge" alt="Copyright">
+<img src="https://img.shields.io/badge/©%202025%20BugsCuddy-All%20Rights%20Reserved-red?style=for-the-badge" alt="Copyright">
 
-**This software and its documentation are the exclusive property of WickedUI**
+**This software and its documentation are the exclusive property of BugsCuddy**
 
 </div>
 
@@ -484,7 +484,7 @@ All trademarks, service marks, and trade names referenced are the property of th
 
 <div align="center">
 
-**Built with ❤️ by the WickedUI team**
+**Built with ❤️ by BugsCuddy**
 
 Special thanks to:
 
@@ -503,15 +503,15 @@ Special thanks to:
 
 ### Need Help?
 
-📧 **Email**: [stephen@wicked-ui.com](mailto:stephen@wicked-ui.com)
-🐛 **Issues**: [GitHub Issues](https://github.com/stephenprahl/qponai/issues)
-💬 **Discussions**: [GitHub Discussions](https://github.com/stephenprahl/qponai/discussions)
+📧 **Email**: [bugscuddy@gmail.com](mailto:bugscuddy@gmail.com)
+🐛 **Issues**: [GitHub Issues](https://github.com/bugscuddy/qponai/issues)
+💬 **Discussions**: [GitHub Discussions](https://github.com/bugscuddy/qponai/discussions)
 
 **Response Time**: We aim to respond within 24 hours during business days.
 
 ---
 
 <img src="https://img.shields.io/badge/Made%20with-❤️-black?style=for-the-badge" alt="Made with Love">
-<img src="https://img.shields.io/badge/Powered%20by-WickedUI-purple?style=for-the-badge" alt="Powered by WickedUI">
+<img src="https://img.shields.io/badge/Powered%20by-BugsCuddy-purple?style=for-the-badge" alt="Powered by BugsCuddy">
 
 </div>
